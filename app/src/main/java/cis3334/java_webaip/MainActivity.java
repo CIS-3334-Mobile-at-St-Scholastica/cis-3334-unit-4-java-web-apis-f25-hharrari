@@ -73,7 +73,55 @@ public class MainActivity extends AppCompatActivity {
 
     private void getStudentAPI() {
         // ======================= Student must add code here to get JSON data from an API =======================
-        textViewStatus.setText("Not implemented yet ....");
+        String url = "https://api.jikan.moe/v4/anime?q=naruto";
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        // Debug: print the full response
+                        Log.d("API_RESPONSE", response.toString());
+
+                        // Check if "data" exists
+                        if (response.has("data")) {
+                            JSONArray dataArray = response.getJSONArray("data");
+
+                            if (dataArray.length() > 0) {
+                                // Take the first anime
+                                JSONObject firstAnimeJson = dataArray.getJSONObject(0);
+
+                                // Parse into Anime object using Moshi
+                                Moshi moshi = new Moshi.Builder().build();
+                                JsonAdapter<Anime> adapter = moshi.adapter(Anime.class);
+                                Anime firstAnime = adapter.fromJson(firstAnimeJson.toString());
+
+                                if (firstAnime != null) {
+                                    textViewStatus.setText(
+                                            firstAnime.getTitle() + " - Rating: " + firstAnime.getRating()
+                                    );
+                                } else {
+                                    textViewStatus.setText("Parse error: Anime was null");
+                                }
+                            } else {
+                                textViewStatus.setText("No anime found in data array");
+                            }
+                        } else {
+                            textViewStatus.setText("No 'data' field in JSON response");
+                        }
+
+                    } catch (JSONException | IOException e) {
+                        textViewStatus.setText("Parse exception: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                },
+                error -> {
+                    textViewStatus.setText("ERROR Response: " + error.toString());
+                    error.printStackTrace();
+                }
+        );
+
+        mRequestQueue.add(jsonObjectRequest);
+
     }
 
     private void getDogFact() {
